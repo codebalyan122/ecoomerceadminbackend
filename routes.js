@@ -1,6 +1,6 @@
 // routes.js
 const express = require("express");
-const app = express.app();
+const router = express.Router();
 const User = require("./models/usersmodel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -19,10 +19,10 @@ const Product = require("./models/addproducts");
 // Routes
 
 // Get all users
-app.get("/", async (req, res) => {
+router.get("/", async (req, res) => {
   res.status(200).json({ msg: "something" });
 });
-app.get("/users", async (req, res) => {
+router.get("/users", async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
@@ -32,7 +32,7 @@ app.get("/users", async (req, res) => {
 });
 
 // Get a specific user
-app.get("/users/:id", async (req, res) => {
+router.get("/users/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -45,7 +45,7 @@ app.get("/users/:id", async (req, res) => {
 });
 
 // Create a new user
-app.post("/users", async (req, res) => {
+router.post("/users", async (req, res) => {
   console.log(req.body);
   const { email, password } = req.body;
 
@@ -75,7 +75,7 @@ app.post("/users", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+router.post("/login", async (req, res) => {
   console.log(req.body);
   const { email, password } = req.body;
 
@@ -108,7 +108,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Update a user
-app.patch("/users/:id", async (req, res) => {
+router.patch("/users/:id", async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -123,7 +123,7 @@ app.patch("/users/:id", async (req, res) => {
 });
 
 // Delete a user
-app.delete("/users/:id", async (req, res) => {
+router.delete("/users/:id", async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     if (!deletedUser) {
@@ -137,7 +137,7 @@ app.delete("/users/:id", async (req, res) => {
 
 //Settings Routes
 
-app.post("/settings", async (req, res) => {
+router.post("/settings", async (req, res) => {
   try {
     const newSettings = new Settings(req.body);
     await newSettings.save();
@@ -148,7 +148,7 @@ app.post("/settings", async (req, res) => {
     res.status(500).json({ error: "Error saving settings" });
   }
 });
-app.get("/settings", async (req, res) => {
+router.get("/settings", async (req, res) => {
   try {
     const settings = await Settings.find(); // Fetch all settings documents
 
@@ -167,7 +167,7 @@ app.get("/settings", async (req, res) => {
   }
 });
 
-app.patch("/settings/:id", async (req, res) => {
+router.patch("/settings/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updatedSettingsData = req.body;
@@ -195,7 +195,7 @@ app.patch("/settings/:id", async (req, res) => {
   }
 });
 
-app.post("/sliders", upload.single("image"), async (req, res) => {
+router.post("/sliders", upload.single("image"), async (req, res) => {
   try {
     const { name, content } = req.body;
     console.log(name, content);
@@ -223,7 +223,7 @@ app.post("/sliders", upload.single("image"), async (req, res) => {
   }
 });
 
-app.get("/sliders", async (req, res) => {
+router.get("/sliders", async (req, res) => {
   try {
     const sliders = await Slider.find();
     res.json(sliders);
@@ -231,7 +231,7 @@ app.get("/sliders", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get("/sliders/:id", async (req, res) => {
+router.get("/sliders/:id", async (req, res) => {
   try {
     const slider = await Slider.findById(req.params.id);
 
@@ -244,7 +244,7 @@ app.get("/sliders/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.patch("/sliders/:id", upload.single("image"), async (req, res) => {
+router.patch("/sliders/:id", upload.single("image"), async (req, res) => {
   try {
     const { name, content } = req.body;
     const image = req.file;
@@ -276,7 +276,7 @@ app.patch("/sliders/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-app.post("/topcategories", upload.single("image"), async (req, res) => {
+router.post("/topcategories", upload.single("image"), async (req, res) => {
   console.log(req.body);
   try {
     const { name, content } = req.body;
@@ -299,7 +299,7 @@ app.post("/topcategories", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-app.get("/topcategories", async (req, res) => {
+router.get("/topcategories", async (req, res) => {
   try {
     const topCategory = await TopCategory.find();
     res.json(topCategory);
@@ -307,7 +307,7 @@ app.get("/topcategories", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get("/topcategories/:id", async (req, res) => {
+router.get("/topcategories/:id", async (req, res) => {
   try {
     const topCategory = await TopCategory.findById(req.params.id);
 
@@ -320,7 +320,7 @@ app.get("/topcategories/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.delete("/topcategories/:id", async (req, res) => {
+router.delete("/topcategories/:id", async (req, res) => {
   try {
     const topCategory = await TopCategory.findByIdAndDelete(req.params.id);
     if (!topCategory) {
@@ -332,7 +332,7 @@ app.delete("/topcategories/:id", async (req, res) => {
   }
 });
 
-app.patch("/topcategories/:id", upload.single("image"), async (req, res) => {
+router.patch("/topcategories/:id", upload.single("image"), async (req, res) => {
   try {
     const { name, content } = req.body;
     const image = req.file;
@@ -366,7 +366,7 @@ app.patch("/topcategories/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-app.post("/midcategories", upload.single("image"), async (req, res) => {
+router.post("/midcategories", upload.single("image"), async (req, res) => {
   try {
     const { name, content, categories } = req.body;
     let imageBuffer = null;
@@ -392,7 +392,7 @@ app.post("/midcategories", upload.single("image"), async (req, res) => {
 });
 
 // GET API to fetch all mid categories
-app.get("/midcategories", async (req, res) => {
+router.get("/midcategories", async (req, res) => {
   try {
     const midCategories = await MidCategory.find().populate("categories");
     res.json(midCategories);
@@ -402,7 +402,7 @@ app.get("/midcategories", async (req, res) => {
 });
 
 // PATCH API to update a mid category
-app.patch("/midcategories/:id", upload.single("image"), async (req, res) => {
+router.patch("/midcategories/:id", upload.single("image"), async (req, res) => {
   console.log(req.body);
   try {
     const { name, content, categories } = req.body;
@@ -446,7 +446,7 @@ app.patch("/midcategories/:id", upload.single("image"), async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-app.get("/midcategories/:id", async (req, res) => {
+router.get("/midcategories/:id", async (req, res) => {
   try {
     const midCategory = await MidCategory.findById(req.params.id).populate(
       "categories"
@@ -461,7 +461,7 @@ app.get("/midcategories/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.delete("/midcategories/:id", async (req, res) => {
+router.delete("/midcategories/:id", async (req, res) => {
   try {
     const midCategory = await MidCategory.findByIdAndDelete(req.params.id);
     if (!midCategory) {
@@ -474,7 +474,7 @@ app.delete("/midcategories/:id", async (req, res) => {
 });
 //Products
 
-app.post("/products", upload.single("image"), async (req, res) => {
+router.post("/products", upload.single("image"), async (req, res) => {
   console.log(req.body);
   try {
     const {
@@ -521,7 +521,7 @@ app.post("/products", upload.single("image"), async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-app.get("/products", async (req, res) => {
+router.get("/products", async (req, res) => {
   try {
     const products = await Product.find()
       .populate("categories.topCategory", "name")
@@ -532,7 +532,7 @@ app.get("/products", async (req, res) => {
   }
 });
 
-app.get("/products/:id", async (req, res) => {
+router.get("/products/:id", async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate("categories.topCategory", "name")
@@ -546,7 +546,7 @@ app.get("/products/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.patch("/products/:id", upload.single("image"), async (req, res) => {
+router.patch("/products/:id", upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -602,7 +602,7 @@ app.patch("/products/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-app.delete("/products/:id", async (req, res) => {
+router.delete("/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const deletedProduct = await Product.findByIdAndDelete(id);
@@ -616,4 +616,4 @@ app.delete("/products/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-module.exports = app;
+module.exports = router;
