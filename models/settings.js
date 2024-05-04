@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
-
 const settingsSchema = new mongoose.Schema({
-  image: {
-    type: String, // Store the image URL or path
-  },
+  imageURL: { type: String }, // Store the image path
   email: {
     type: String,
     required: true,
@@ -22,24 +19,17 @@ const settingsSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    // required: true,
   },
   footerCopyright: {
     type: String,
   },
   socialMedia: {
-    type: {
-      facebook: String,
-      instagram: String,
-      twitter: String,
-      youtube: String,
-      linkedin: String,
-    },
+    facebook: String,
+    instagram: String,
+    twitter: String,
+    youtube: String,
+    linkedin: String,
   },
-  // Additional notes can be added if needed
-  // notes: {
-  //   type: String,
-  // },
 });
 
 module.exports = mongoose.model("Settings", settingsSchema);

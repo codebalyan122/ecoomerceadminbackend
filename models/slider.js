@@ -10,11 +10,7 @@ const sliderSchema = new mongoose.Schema({
     required: true,
   },
   image: {
-    data: Buffer,
-    contentType: {
-      type: String,
-      //   required: true,
-    },
+    type: String,
   },
   createdAt: {
     type: Date,

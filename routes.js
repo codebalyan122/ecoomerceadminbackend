@@ -7,9 +7,10 @@ const jwt = require("jsonwebtoken");
 const Settings = require("./models/settings");
 const Slider = require("./models/slider");
 const multer = require("multer");
-const upload = multer();
+const fs = require("fs");
 const TopCategory = require("./models/topcategory");
 const MidCategory = require("./models/midcategory");
+const path = require("path");
 
 const { default: mongoose } = require("mongoose");
 const Product = require("./models/addproducts");
@@ -148,6 +149,7 @@ router.post("/settings", async (req, res) => {
     res.status(500).json({ error: "Error saving settings" });
   }
 });
+
 router.get("/settings", async (req, res) => {
   try {
     const settings = await Settings.find(); // Fetch all settings documents
@@ -167,40 +169,98 @@ router.get("/settings", async (req, res) => {
   }
 });
 
-router.patch("/settings/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updatedSettingsData = req.body;
-
-    // Find the settings document by ID
-    const settings = await Settings.findById(id);
-
-    // Check if settings exist
-    if (!settings) {
-      return res.status(404).json({ message: "Settings not found" });
-    }
-
-    // Update the settings document with the provided data
-    Object.keys(updatedSettingsData).forEach((key) => {
-      settings[key] = updatedSettingsData[key];
-    });
-
-    // Save the updated settings document
-    const updatedSettingsDoc = await settings.save();
-
-    res.status(200).json(updatedSettingsDoc);
-  } catch (err) {
-    console.error("/api/settings/:id error:", err);
-    res.status(500).json({ error: "Error updating settings" });
-  }
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "settings/"); // Save images in the 'settings' folder
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
-router.post("/sliders", upload.single("image"), async (req, res) => {
+const upload = multer({ storage: storage });
+
+router.patch(
+  "/settings/:id",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "email", maxCount: 1 },
+    { name: "companyName", maxCount: 1 },
+    { name: "contactNumber", maxCount: 1 },
+    { name: "whatsappNumber", maxCount: 1 },
+    { name: "address", maxCount: 1 },
+    { name: "footerCopyright", maxCount: 1 },
+    { name: "socialMedia.facebook", maxCount: 1 },
+    { name: "socialMedia.instagram", maxCount: 1 },
+    { name: "socialMedia.twitter", maxCount: 1 },
+    { name: "socialMedia.youtube", maxCount: 1 },
+    { name: "socialMedia.linkedin", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      let updatedSettingsData = {};
+
+      // If an image is uploaded, handle the request body differently
+      if (req.files && req.files.image) {
+        // Add the image file path to the updatedSettingsData object
+        updatedSettingsData.imageURL = `${req.files.image[0].filename}`;
+      }
+
+      // Extract the socialMedia object from the request body
+      const socialMediaData = {
+        facebook: req.body["socialMedia.facebook"] || "",
+        instagram: req.body["socialMedia.instagram"] || "",
+        twitter: req.body["socialMedia.twitter"] || "",
+        youtube: req.body["socialMedia.youtube"] || "",
+        linkedin: req.body["socialMedia.linkedin"] || "",
+      };
+
+      // Parse the non-file fields from the request body
+      updatedSettingsData = {
+        ...updatedSettingsData,
+        ...req.body,
+        socialMedia: socialMediaData,
+      };
+
+      // Find the settings document by ID
+      const settings = await Settings.findById(id);
+
+      // Check if settings exist
+      if (!settings) {
+        return res.status(404).json({ message: "Settings not found" });
+      }
+
+      // Update the top-level fields
+      Object.assign(settings, updatedSettingsData);
+
+      // Save the updated settings document
+      const updatedSettingsDoc = await settings.save();
+      res.status(200).json(updatedSettingsDoc);
+    } catch (err) {
+      console.error("/api/settings/:id error:", err);
+      res.status(500).json({ error: "Error updating settings" });
+    }
+  }
+);
+
+const storageSlider = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "sliders/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+const uploadSlider = multer({ storage: storageSlider });
+
+router.post("/sliders", uploadSlider.single("image"), async (req, res) => {
   try {
     const { name, content } = req.body;
     console.log(name, content);
+    console.log(req.file); // You can remove this line if you don't need it
     const image = req.file;
-
     if (!image) {
       return res.status(400).json({ error: "No image provided" });
     }
@@ -209,12 +269,10 @@ router.post("/sliders", upload.single("image"), async (req, res) => {
     const newSlider = new Slider({
       name,
       content,
-      image: {
-        data: image.buffer,
-        contentType: image.mimetype,
-      },
+      image: req.file.filename, // Store the image filename instead of the buffer
     });
 
+    console.log(newSlider);
     // Save the new slider to the database
     const savedSlider = await newSlider.save();
     res.status(201).json(savedSlider);
@@ -475,23 +533,31 @@ router.delete("/midcategories/:id", async (req, res) => {
 //Products
 
 router.post("/products", upload.single("image"), async (req, res) => {
-  console.log(req.body);
   try {
     const {
       name,
       content,
+      model,
       price,
-      color,
+      colors,
       topCategory,
       midCategories,
       isNewArrival,
       isBestSelling,
+      youtubeUrl,
+      productColors,
+      productCondition,
+      minimumQuantity,
+      estimatedShippingTime,
+      productSize,
+      wholesaleQuantity,
+      wholesalePrice,
+      productMeasurement,
     } = req.body;
 
     const midCategoriesIds = midCategories
       .split(",")
       .map((categoryId) => new mongoose.Types.ObjectId(categoryId));
-
     const categories = [
       {
         topCategory: new mongoose.Types.ObjectId(topCategory),
@@ -509,18 +575,34 @@ router.post("/products", upload.single("image"), async (req, res) => {
           }
         : null,
       price,
-      color,
+      colors: JSON.parse(colors),
+      model, // Add model field if needed
+      youtubeUrl,
       categories,
       isNewArrival,
       isBestSelling,
+      productCondition,
+      minimumQuantity: parseInt(minimumQuantity),
+      estimatedShippingTime,
+      productSize,
+      wholesaleQuantity: parseInt(wholesaleQuantity),
+      wholesalePrice: parseInt(wholesalePrice),
+      productMeasurement,
+      manageStock: false, // Add manageStock field if needed
+      sizeNames: [], // Add sizeNames field if needed
+      sizeQuantities: [], // Add sizeQuantities field if needed
+      sizePrices: [], // Add sizePrices field if needed
+      sizeColors: [], // Add sizeColors field if needed
+      productColors: JSON.parse(productColors),
     });
 
     const savedProduct = await product.save();
-    res.status(201).json({ savedProduct, msg: "Product added sucessfully" });
+    res.status(201).json({ savedProduct, msg: "Product added successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
+
 router.get("/products", async (req, res) => {
   try {
     const products = await Product.find()
@@ -549,26 +631,37 @@ router.get("/products/:id", async (req, res) => {
 router.patch("/products/:id", upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params;
+
     const {
       name,
       content,
       price,
-      color,
-      topCategories,
+      model,
+      colors,
+      topCategory,
       midCategories,
       isNewArrival,
       isBestSelling,
+      youtubeUrl,
+      productColors,
+      productCondition,
+      minimumQuantity,
+      estimatedShippingTime,
+      productSize,
+      wholesaleQuantity,
+      wholesalePrice,
+      productMeasurement,
     } = req.body;
 
-    console.log(req.body);
     const midCategoriesIds = midCategories
       ? midCategories
           .split(",")
           .map((categoryId) => new mongoose.Types.ObjectId(categoryId))
       : [];
+
     const categories = [
       {
-        topCategory: new mongoose.Types.ObjectId(topCategories),
+        topCategory: new mongoose.Types.ObjectId(topCategory),
         midCategory: midCategoriesIds.map(
           (id) => new mongoose.Types.ObjectId(id)
         ),
@@ -581,11 +674,21 @@ router.patch("/products/:id", upload.single("image"), async (req, res) => {
       ...(req.file && {
         image: { data: req.file.buffer, contentType: req.file.mimetype },
       }),
-      price,
-      color,
+      price: parseFloat(price),
+      colors: JSON.parse(colors),
+      model,
+      youtubeUrl,
       categories,
       isNewArrival,
       isBestSelling,
+      productColors: JSON.parse(productColors),
+      productCondition,
+      minimumQuantity: parseInt(minimumQuantity),
+      estimatedShippingTime,
+      productSize,
+      wholesaleQuantity: parseInt(wholesaleQuantity),
+      wholesalePrice: parseFloat(wholesalePrice),
+      productMeasurement,
     };
 
     const product = await Product.findByIdAndUpdate(id, updatedProduct, {
@@ -596,7 +699,7 @@ router.patch("/products/:id", upload.single("image"), async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    res.status(200).json({ product, msg: "product Updated sucessfully" });
+    res.status(200).json({ product, msg: "Product updated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
